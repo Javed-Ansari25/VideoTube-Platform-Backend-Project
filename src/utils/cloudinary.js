@@ -1,26 +1,30 @@
-import { v2 as cloudinary } from "cloudinary"
-import fs from 'fs'
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
+import cloudinary from "cloudinary";
+import fs from "fs";
 
 const uploadOnCloudinary = async (localFilePath) => {
-    try {
-        if(!localFilePath) return null;
-        const response = await cloudinary.uploader.upload(
-            localFilePath,
-            {resource_type: "auto"}
-        )
+  try {
+    if (!localFilePath) return null;
 
-        console.log("file is upload on cloudinary", response.url);
-        return response;
-    } catch (error) {
-        fs.unlinkSync(localFilePath);
-        return null;
-    }
-}
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
 
-export {uploadOnCloudinary}
+    const response = await cloudinary.uploader.upload(localFilePath, {
+      folder: "users/avatar",
+      resource_type: "auto",
+    });
+
+    fs.unlinkSync(localFilePath);
+
+    // console.log("Cloudinary Upload Success:", response.secure_url);
+    console.log("Cloudinary Upload Success !");
+    return response;
+  } catch (error) {
+    console.error("Cloudinary Upload Error:", error);
+    return null;
+  }
+};
+
+export { uploadOnCloudinary };
