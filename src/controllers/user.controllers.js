@@ -156,8 +156,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
       req.user._id, // ye auth middleware se aa rha hai
       {
-        $set: {
-          refreshToken : undefined
+        $unset: {
+          refreshToken : 1
         }
       },
       {
