@@ -60,8 +60,8 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Avatar file is required ');
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath, "image");
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath, "image");
 
   if (!avatar) {
     throw new ApiError(400, 'Avatar upload failed');
@@ -284,7 +284,7 @@ const updateAvatar = asyncHandler(async(req, res) => {
     throw new ApiError(400, "Avatar file is messing")
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath, "image");
   if(!avatar?.url) {
     throw new ApiError(400, "Error on while upload time")
   }
@@ -314,7 +314,7 @@ const updateCoverImage = asyncHandler(async(req, res) => {
     throw new ApiError(400, "coverImage image file is messing")
   }
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath, "image");
   if(!coverImage?.url) {
     throw new ApiError(400, "Error on while upload time")
   }

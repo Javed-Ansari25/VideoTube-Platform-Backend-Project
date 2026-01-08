@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
-import { Video } from '../models/video.model';
+import { Video } from '../models/video.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import deleteLocalFile from '../utils/deleteLocalFile.js';
 
 // This API returns published videos with search, sorting and pagination using aggregation.
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -70,11 +71,15 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   // Upload files to Cloudinary
-  const videoUpload = await uploadOnCloudinary(videoFileLocalPath);
-  const thumbnailUpload = await uploadOnCloudinary(thumbnailLocalPath);
+  const videoUpload = await uploadOnCloudinary(videoFileLocalPath, "video");
+  const thumbnailUpload = await uploadOnCloudinary(thumbnailLocalPath, "image");
 
-  if (!videoUpload?.url || !thumbnailUpload?.url) {
-    throw new ApiError(400, "Video or thumbnail upload failed");
+  if (!videoUpload?.url) {
+    throw new ApiError(400, "Video upload failed");
+  }
+
+  if (!thumbnailUpload?.url) {
+    throw new ApiError(400, "Thumbnail upload failed");
   }
 
   // Create video document 
@@ -84,7 +89,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
     duration,
     videoFile: videoUpload.url,
     thumbnail: thumbnailUpload.url,
-    owner: req.user._id
+    owner: req.user._id,
+    isPublished: true 
   });
 
   return res.status(201).json(
@@ -102,7 +108,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   }
 
   // Find video + populate owner
-  const video = await VideoModel.findById(videoId).populate(
+  const video = await Video.findById(videoId).populate(
     "owner",
     "username avatar"
   );
@@ -139,7 +145,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 
   // Handle optional thumbnail
   if (req.file?.path) {
-    const thumbnailUpload = await uploadOnCloudinary(req.file.path);
+    const thumbnailUpload = await uploadOnCloudinary(req.file.path, "image");
     if (!thumbnailUpload?.url) {
       throw new ApiError(400, "Thumbnail upload failed");
     }
@@ -148,7 +154,7 @@ const updateVideo = asyncHandler(async (req, res) => {
   }
 
   // Atomic update or authorization
-  const updatedVideo = await VideoModel.findOneAndUpdate(
+  const updatedVideo = await Video.findOneAndUpdate(
     { _id: videoId, owner: req.user._id },
     { $set: updateFields },
     { new: true }
@@ -173,7 +179,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
   }
 
   // Atomic delete or authorization check
-  const deletedVideo = await VideoModel.findOneAndDelete({
+  const deletedVideo = await Video.findOneAndDelete({
     _id: videoId,
     owner: req.user._id
   });
@@ -188,7 +194,33 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Video deleted successfully"));
 });
 
+// This API allows creators to control video visibility.
+const togglePublishStatus = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
 
+  if (!mongoose.Types.ObjectId.isValid(videoId)) {
+    throw new ApiError(400, "Invalid videoId");
+  }
 
+  const video = await Video.findOneAndUpdate(
+    { _id: videoId, owner: req.user._id },   // auth + filter
+    [
+      {
+        $set: {
+          isPublished: { $not: "$isPublished" }
+        }
+      }
+    ],
+    { new: true, updatePipeline: true }
+  );
 
-export {getAllVideos, publishAVide, getVideoById, updateVideo, deleteVideo}
+  if (!video) {
+    throw new ApiError(404, "Video not found or unauthorized");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, video, "Publish status toggled successfully")
+  );
+});
+
+export {getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo, togglePublishStatus}
