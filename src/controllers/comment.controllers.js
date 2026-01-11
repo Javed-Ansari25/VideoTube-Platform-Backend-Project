@@ -5,7 +5,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const addComment = asyncHandler(async (req, res) => {
-    const {content, videoId} = req.body;
+    const {content} = req.body;
+    const {videoId} = req.params;
 
     if (!content?.trim()) {
         throw new ApiError(400, "Comment field are required");
