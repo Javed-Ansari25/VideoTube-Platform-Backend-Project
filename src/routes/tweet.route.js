@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { createTweet, getAllTweets, getUserTweetsByID, updateTweet, deleteComment } from "../controllers/tweets.controllers.js";
+import { createTweet, getAllTweets, getUserTweetsByID, updateTweet, deleteTweet } from "../controllers/tweets.controllers.js";
 
 const router = Router();
-app.use(verifyJWT); 
+router.use(verifyJWT); 
 
 // routes
 router.route("/")
@@ -13,8 +13,8 @@ router.route("/")
 router.route("/:userId")
 .get(getUserTweetsByID)
 
-router.route("/c/:tweetId")
+router.route("/:tweetId")
 .patch(updateTweet)
-.delete(deleteComment)
+.delete(deleteTweet)
 
 export default router

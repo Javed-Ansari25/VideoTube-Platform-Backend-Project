@@ -90,7 +90,7 @@ const updateTweet = asyncHandler(async (req, res) => {
     );
 })
 
-const deleteComment = asyncHandler(async (req, res) => {
+const deleteTweet = asyncHandler(async (req, res) => {
     const { tweetId } = req.params;
 
     if(!mongoose.Types.ObjectId.isValid(tweetId)) {
@@ -111,4 +111,4 @@ const deleteComment = asyncHandler(async (req, res) => {
     );
 })
 
-export {createTweet, getAllTweets, getUserTweetsByID, updateTweet, deleteComment}
+export {createTweet, getAllTweets, getUserTweetsByID, updateTweet, deleteTweet}
