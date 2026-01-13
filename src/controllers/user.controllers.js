@@ -228,25 +228,34 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 })
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
-  const {oldPassword, newPassword} = req.body;
+  const { oldPassword, newPassword } = req.body;
 
-  // if(!(newPassword === conformPassword)) {
-  //   throw new ApiError(201, "Password is not conform");
-  // }
+  if (!oldPassword || !newPassword) {
+    throw new ApiError(400, "Old and new password are required");
+  }
 
-  const user = await User.findById(req.user?._id);
-  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  const user = await User.findById(req.user._id);
 
-  if(!isPasswordCorrect) {
-    throw new ApiError(400, "Password is incorrect");
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isMatch = await user.isPasswordCorrect(oldPassword);
+
+  if (!isMatch) {
+    throw new ApiError(400, "Old password is incorrect");
+  }
+
+  if (oldPassword === newPassword) {
+    throw new ApiError(400, "New password must be different");
   }
 
   user.password = newPassword;
-  await user.save({validateBeforeSave : false});
+  await user.save(); 
 
   return res.status(200).json(
-    new ApiResponse(200, {}, "Password change successfully")
-  )
+    new ApiResponse(200, {}, "Password changed successfully")
+  );
 
 })
 
@@ -412,7 +421,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
     {
       $lookup: {
-        from: "videoModels",
+        from: "videos",
         localField: "watchHistory",
         foreignField: "_id",
         as: "watchHistory",
@@ -445,7 +454,6 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       }
     }
   ])
-
 
   return res.status(200).json(
     new ApiResponse(200, user[0].watchHistory, "watchHistory fetched successfully")
