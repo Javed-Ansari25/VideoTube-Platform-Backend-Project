@@ -1,8 +1,8 @@
 # 🎥 VideoTube – Backend API
 
-VideoTube is a **scalable backend project** inspired by platforms like YouTube. It is built using **Node.js, Express.js, MongoDB**, and modern backend best practices such as **JWT authentication, Cloudinary file uploads, and secure user management**.
+VideoTube is a **scalable, production‑style backend API** inspired by platforms like YouTube. It is built using **Node.js, Express.js, MongoDB**, and modern backend best practices such as **JWT authentication, Cloudinary file uploads, and secure user management**.
 
-This project was developed as a **learning + production‑style backend**, focusing on clean architecture, reusable utilities, and interview‑ready concepts.
+This project is designed as a **learning + portfolio‑ready backend**, with clean architecture, reusable utilities, optimized database queries, and interview‑focused concepts.
 
 ---
 
@@ -11,11 +11,13 @@ This project was developed as a **learning + production‑style backend**, focus
 ### 👤 User Management
 
 * User registration & login
-* JWT based authentication (Access Token + Refresh Token)
+* JWT‑based authentication (Access Token + Refresh Token)
 * Secure password hashing using **bcrypt**
 * Change password functionality
 * Get current logged‑in user details
-* Update user profile (name, email, etc.)
+* Update user account details (name, email, etc.)
+
+---
 
 ### 🖼️ Media Upload
 
@@ -25,15 +27,73 @@ This project was developed as a **learning + production‑style backend**, focus
 * Cloud storage using **Cloudinary**
 * Automatic local file cleanup after upload
 
+---
+
 ### 📺 Channel & Profile
 
 * Get user channel profile by username
+* Channel ownership logic
 * Protected routes using JWT middleware
+
+---
+
+### 🎬 Video Management
+
+* Create (upload) video metadata
+* Update video details (title, description, thumbnail)
+* Publish / unpublish videos
+* Get single video details
+* Get all videos with pagination
+* Owner‑based authorization for video updates
+
+---
+
+### 💬 Comment System
+
+* Add comment on a video
+* Update comment (owner only)
+* Delete comment (owner only)
+* Fetch all comments of a video
+* Optimized queries using **aggregation pipeline**
+
+---
+
+### ❤️ Like System (Toggle Based)
+
+* Toggle like on videos
+* Toggle like on comments
+* Toggle like on tweets/posts
+* Prevent duplicate likes using compound indexes
+* Like count retrieval per resource
+
+---
+
+### 📂 Playlist Management
+
+* Create playlist
+* Update playlist (name, description)
+* Delete playlist
+* Add video to playlist
+* Remove video from playlist
+* Playlist ownership validation
+* Duplicate video prevention using `$addToSet`
+
+---
+
+### 🔔 Subscription System
+
+* Subscribe / unsubscribe to a channel (toggle)
+* Get subscriber count of a channel
+* Get channels subscribed by a user
+* Efficient queries using indexed fields
+
+---
 
 ### 🔐 Security
 
 * HTTP‑only cookies for tokens
-* Middleware‑based route protection
+* Access & Refresh token strategy
+* Middleware‑based route protection (`verifyJWT`)
 * Environment variable based configuration
 
 ---
@@ -56,12 +116,12 @@ This project was developed as a **learning + production‑style backend**, focus
 VideoTube-Backend/
 │
 ├── src/
-│   ├── controllers/      # Business logic
-│   ├── models/           # Mongoose schemas
-│   ├── routes/           # API routes
-│   ├── middlewares/      # Auth, multer, etc.
-│   ├── utils/            # Helper functions
-│   ├── config/           # DB & Cloudinary config
+│   ├── controllers/      # Business logic (users, videos, comments, likes, playlists, subscriptions)
+│   ├── models/           # Mongoose schemas & indexes
+│   ├── routes/           # Express API routes
+│   ├── middlewares/      # Auth, multer, error handlers
+│   ├── utils/            # Reusable helpers & API responses
+│   ├── config/           # Database & Cloudinary configuration
 │   └── app.js            # Express app setup
 │
 ├── .env.example
@@ -73,45 +133,85 @@ VideoTube-Backend/
 
 ## 🔑 Authentication Flow (High Level)
 
-1. User logs in with email & password
+1. User logs in using email & password
 2. Server verifies credentials
-3. **Access Token** (short‑lived) is issued
-4. **Refresh Token** (long‑lived) is stored securely
+3. **Access Token** (short‑lived) is generated
+4. **Refresh Token** (long‑lived) is generated & stored
 5. Tokens are sent via **HTTP‑only cookies**
-6. Protected routes are accessed using JWT middleware
+6. Protected routes are accessed using `verifyJWT` middleware
 
 ---
 
 ## 📡 API Routes (Overview)
 
-### Auth & User
+### 👤 Auth & User
 
-* `POST /api/v1/users/register`
-* `POST /api/v1/users/login`
-* `POST /api/v1/users/logout`
-* `POST /api/v1/users/change-password`
-* `GET  /api/v1/users/current-user`
-* `PATCH /api/v1/users/update-account`
+* `POST   /api/v1/users/register`
+* `POST   /api/v1/users/login`
+* `POST   /api/v1/users/logout`
+* `POST   /api/v1/users/change-password`
+* `GET    /api/v1/users/current-user`
+* `PATCH  /api/v1/users/update-account`
 
-### Media
+---
 
-* `PATCH /api/v1/users/avatar`
-* `PATCH /api/v1/users/coverImage`
+### 🖼️ Media
 
-### Channel
+* `PATCH  /api/v1/users/avatar`
+* `PATCH  /api/v1/users/cover-image`
 
-* `GET /api/v1/users/c/:username`
+---
 
-> 🔒 Most routes are **JWT protected**
+### 🎬 Videos
+
+* `POST   /api/v1/videos`
+* `GET    /api/v1/videos`
+* `GET    /api/v1/videos/:videoId`
+* `PATCH  /api/v1/videos/:videoId`
+* `PATCH  /api/v1/videos/toggle/publish/:videoId`
+
+---
+
+### 💬 Comments
+
+* `POST   /api/v1/comments/:videoId`
+* `GET    /api/v1/comments/:videoId`
+* `PATCH  /api/v1/comments/:commentId`
+* `DELETE /api/v1/comments/:commentId`
+
+---
+
+### ❤️ Likes
+
+* `POST   /api/v1/likes/toggle/video/:videoId`
+* `POST   /api/v1/likes/toggle/comment/:commentId`
+* `POST   /api/v1/likes/toggle/tweet/:tweetId`
+
+---
+
+### 📂 Playlists
+
+* `POST   /api/v1/playlists`
+* `GET    /api/v1/playlists/user/:userId`
+* `PATCH  /api/v1/playlists/:playlistId`
+* `DELETE /api/v1/playlists/:playlistId`
+* `PATCH  /api/v1/playlists/add/:videoId/:playlistId`
+* `PATCH  /api/v1/playlists/remove/:videoId/:playlistId`
+
+---
+
+### 🔔 Subscriptions
+
+* `POST   /api/v1/subscriptions/toggle/:channelId`
+* `GET    /api/v1/subscriptions/channel/:channelId`
+* `GET    /api/v1/subscriptions/user/:userId`
 
 ---
 
 ## ⚙️ Environment Variables
 
-Create a `.env` file using this reference:
-
 ```
-PORT=8000
+PORT=your_port
 MONGODB_URI=your_mongodb_connection
 JWT_ACCESS_SECRET=your_access_secret
 JWT_REFRESH_SECRET=your_refresh_secret
@@ -128,45 +228,42 @@ CLOUDINARY_API_SECRET=your_api_secret
 ## ▶️ How to Run Locally
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-Server will run on:
+Server runs on:
 
 ```
-http://localhost:8000
+http://localhost:PORT
 ```
 
 ---
 
 ## 🧠 Learning Outcomes
 
-* Real‑world authentication using JWT
+* Real‑world JWT authentication flow
 * Secure password & token handling
-* File upload & cloud storage integration
-* REST API design (PATCH vs POST vs GET)
-* Clean backend folder structure
-* Error handling & middleware usage
+* MongoDB indexing & aggregation pipelines
+* Toggle‑based like & subscription systems
+* RESTful API design
+* Clean controller & middleware separation
 
 ---
 
 ## 📌 Future Improvements
 
-* Video upload & streaming
-* Like, comment & subscribe system
+* Video streaming & HLS support
 * Watch history & recommendations
-* Role‑based access control
-* API rate limiting
+* Notifications system
+* Role‑based access control (RBAC)
+* API rate limiting & caching
 
 ---
 
 ## 🙌 Conclusion
 
-**VideoTube Backend** is a complete, interview‑ready backend project demonstrating modern backend development practices. It is suitable for **learning, portfolio showcase, and further extension into a full‑stack application**.
+**VideoTube Backend** is a complete, interview‑ready backend project showcasing modern backend engineering practices. It is suitable for **learning, portfolio showcase, and scaling into a full‑stack application**.
 
 ---
 
