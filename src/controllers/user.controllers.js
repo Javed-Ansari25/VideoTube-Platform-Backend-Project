@@ -432,6 +432,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
               localField: "owner",
               foreignField: "_id",
               as: "owner",
+
               pipeline: [
                 {
                   $project: {
@@ -441,8 +442,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                   }
                 }
               ]
+
             }
           },
+          
+          // convert the owner array into a single object using $first.
           {
             $addFields: {
               owner: {
@@ -450,6 +454,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
               }
             }
           }
+
         ]
       }
     }
