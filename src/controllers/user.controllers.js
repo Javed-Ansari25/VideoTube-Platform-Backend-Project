@@ -89,20 +89,23 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-  //  STEPS :-
-  //  Read data from request
-  //  Validate required fields
-  //  Search user in database
-  //  Check if user exists
-  //  Verify password
-  //  Generate access & refresh tokens
-  //  Remove sensitive fields from user data
-  //  Set secure HTTP-only cookies(options)
-  //  Send success response to client
+  // STEPS :-
+  // 1. Read data from request
+  // 2. Validate required fields
+  // 3. Fetch user (single DB call)
+  // 4. Check if user exists
+  // 5. Check if account is locked
+  // 6. Verify password
+  // 7. Handle wrong password (increase attempts & lock account)
+  // 8. Generate access & refresh tokens
+  // 9. Reset login attempts on success
+  // 10. Remove sensitive fields (NO extra DB call)
+  // 11. Set secure HTTP-only cookies
+  // 12. Send success response
 
-  const {email, username, password} = req.body;
+  const { email, username, password } = req.body;
 
-  if(!username && !email) {
+  if (!username && !email) {
     throw new ApiError(400, "username or email is required");
   }
 
@@ -111,41 +114,63 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findOne({
-    $or: [{username}, {email}]
+    $or: [{ username }, { email }]
   });
 
-  if(!user) {
-    throw new ApiError(404, "User does not exits");
+  if (!user) {
+    throw new ApiError(404, "User does not exist");
+  }
+
+  // Check if account is locked
+  if (user.lockUntil && user.lockUntil > Date.now()) {
+    throw new ApiError(403, "Account locked. Try again later.");
   }
 
   const isPasswordValid = await user.isPasswordCorrect(password);
+  if (!isPasswordValid) {
+    user.loginAttempts += 1;
 
-  if(!isPasswordValid) {
-    throw new ApiError(401, "Invalid password");
+    if (user.loginAttempts >= 5) {
+      user.lockUntil = Date.now() + 10 * 60 * 1000;
+    }
+
+    await user.save();
+    throw new ApiError(401, "Invalid credentials");
   }
 
-  const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-  const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+  user.loginAttempts = 0;
+  user.lockUntil = null;
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  // Remove sensitive fields 
+  const userResponse = user.toObject();
+  delete userResponse.password;
+  delete userResponse.refreshToken;
 
   const options = {
-    httpOnly : true,
-    secure : true
-  }
+    httpOnly: true,
+    secure: true
+  };
 
   return res
-  .status(200)
-  .cookie("accessToken", accessToken, options)
-  .cookie("refreshToken", refreshToken, options)
-  .json(
-    new ApiResponse(
-      200,
-      {
-        user: loggedInUser, accessToken, refreshToken
-      },
-      "user login successfully"
-    ))
-})
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: userResponse,
+          accessToken,
+          refreshToken
+        },
+        "User logged in successfully"
+      )
+    );
+});
 
 const logoutUser = asyncHandler(async (req, res) => {
     // STEPS :-
@@ -176,6 +201,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logout successfully"));
 })
+
 // ReGenerate tokens
 const refreshAccessToken = asyncHandler(async (req, res) => {
   // STEPS :-
