@@ -6,7 +6,6 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import deleteLocalFile from '../utils/deleteLocalFile.js';
 
-// This API returns published videos with search, sorting and pagination using aggregation.
 const getAllVideos = asyncHandler(async (req, res) => {
   const {page = 1, limit = 10, query, sortBy = 'createdAt', sortType = 'desc', userId} = req.query;
 
@@ -53,7 +52,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, videos, 'Videos fetched successfully'));
 });
 
-// Video and thumbnail are uploaded to cloud storage and their URLs are saved in database.
 const publishAVideo = asyncHandler(async (req, res) => {
   const { title, description, duration } = req.body;
 
@@ -98,7 +96,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
   );
 });
 
-// Every time a video is watched, view count is increased.
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
@@ -127,7 +124,6 @@ const getVideoById = asyncHandler(async (req, res) => {
   );
 });
 
-// Only the video owner can update its details
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { title, description } = req.body;
@@ -169,7 +165,6 @@ const updateVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, updatedVideo, "Video updated successfully"));
 });
 
-// Authorization ensures only the owner can delete the video.
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
@@ -194,7 +189,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Video deleted successfully"));
 });
 
-// This API allows creators to control video visibility.
 const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
