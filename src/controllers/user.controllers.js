@@ -25,17 +25,17 @@ const generateAccessAndRefreshToken = async (userId) => {
 const registerUser = asyncHandler(async (req, res) => {
   const { username, email, fullName, password } = req.body;
 
-  if (!username || !email || !fullName || !password) {
+  if (![fullName, username, email, password].every(Boolean)) {
     throw new ApiError(400, "All fields are required");
   }
 
-  const existedUser = await User.exists({
-    $or: [{ email }, { username }]
-  });
+  // const existedUser = await User.exists({
+  //   $or: [{ email }, { username }]
+  // });
 
-  if (existedUser) {
-    throw new ApiError(409, "User already exists");
-  }
+  // if (existedUser) {
+  //   throw new ApiError(409, "User already exists");
+  // }
 
   const avatarPath = req.files?.avatar?.[0]?.path;
   const coverPath = req.files?.coverImage?.[0]?.path;
@@ -56,29 +56,36 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImageUrl = cover?.url || "";
   }
 
-  const user = await User.create({
-    username: username.toLowerCase(),
-    fullName,
-    email,
-    password,
-    avatar: avatar.url,
-    coverImage: coverImageUrl
-  });
-
-  const userResponse = {
-    _id: user._id,
-    username: user.username,
-    fullName: user.fullName,
-    email: user.email,
-    avatar: user.avatar,
-    coverImage: user.coverImage,
-  };
-
-  return res
-    .status(201)
-    .json(
-      new ApiResponse(201, userResponse, "User registered successfully")
-    );
+  try {
+    const user = await User.create({
+      username: username.toLowerCase(),
+      fullName,
+      email,
+      password,
+      avatar: avatar.url,
+      coverImage: coverImageUrl
+    });
+  
+    const userResponse = {
+      _id: user._id,
+      username: user.username,
+      fullName: user.fullName,
+      email: user.email,
+      avatar: user.avatar,
+      coverImage: user.coverImage,
+    };
+  
+    return res
+      .status(201)
+      .json(
+        new ApiResponse(201, userResponse, "User registered successfully")
+      );
+  } catch (error) {
+    if (error.code == 11000) {
+      throw new ApiError(409, "Email or Username already exists");
+    }
+    throw error;
+  }
 });
 
 const loginUser = asyncHandler(async (req, res) => {
