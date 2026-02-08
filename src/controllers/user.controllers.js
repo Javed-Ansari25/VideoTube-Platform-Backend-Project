@@ -5,230 +5,47 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import deleteLocalFile from '../utils/deleteLocalFile.js';
-import jtw from "jsonwebtoken";
 
-const generateAccessAndRefreshToken = async (userId) => {
-  try {
-    const user = await User.findById(userId);
-    const accessToken = user.accessTokenGenerate();
-    const refreshToken = user.refreshTokenGenerate();    
-
-    user.refreshToken = refreshToken;
-    await user.save({ValidateBeforeSave: false});
-
-    return {accessToken, refreshToken}
-  } catch (error) {
-    throw new ApiError(401, "Some thing went wrong, Access and Refresh token generate");
-  }
-}
-
-const registerUser = asyncHandler(async (req, res) => {
-  const { username, email, fullName, password } = req.body;
-
-  if (![fullName, username, email, password].every(Boolean)) {
-    throw new ApiError(400, "All fields are required");
-  }
-
-  // const existedUser = await User.exists({
-  //   $or: [{ email }, { username }]
-  // });
-
-  // if (existedUser) {
-  //   throw new ApiError(409, "User already exists");
-  // }
+const uploadUserImages = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
 
   const avatarPath = req.files?.avatar?.[0]?.path;
   const coverPath = req.files?.coverImage?.[0]?.path;
 
-  if (!avatarPath) {
-    throw new ApiError(400, "Avatar is required");
+  if (!avatarPath && !coverPath) {
+    throw new ApiError(400, "Please upload avatar or cover image");
   }
 
-  // upload avatar first
-  const avatar = await uploadOnCloudinary(avatarPath, "image");
-  if (!avatar?.url) {
-    throw new ApiError(400, "Avatar upload failed");
+  let updateData = {};
+
+  if (avatarPath) {
+    const avatar = await uploadOnCloudinary(avatarPath, "image");
+    if (!avatar?.url) {
+      throw new ApiError(400, "Avatar upload failed");
+    }
+    updateData.avatar = avatar.url;
   }
 
-  let coverImageUrl = "";
   if (coverPath) {
     const cover = await uploadOnCloudinary(coverPath, "image");
-    coverImageUrl = cover?.url || "";
-  }
-
-  try {
-    const user = await User.create({
-      username: username.toLowerCase(),
-      fullName,
-      email,
-      password,
-      avatar: avatar.url,
-      coverImage: coverImageUrl
-    });
-  
-    const userResponse = {
-      _id: user._id,
-      username: user.username,
-      fullName: user.fullName,
-      email: user.email,
-      avatar: user.avatar,
-      coverImage: user.coverImage,
-    };
-  
-    return res
-      .status(201)
-      .json(
-        new ApiResponse(201, userResponse, "User registered successfully")
-      );
-  } catch (error) {
-    if (error.code == 11000) {
-      throw new ApiError(409, "Email or Username already exists");
+    if (cover?.url) {
+      updateData.coverImage = cover.url;
     }
-    throw error;
-  }
-});
-
-const loginUser = asyncHandler(async (req, res) => {
-  const { email, username, password } = req.body;
-
-  if (!password || (!email && !username)) {
-    throw new ApiError(400, "Email/Username and password are required");
   }
 
-  const user = await User.findOne({
-    $or: [{ email }, { username }]
-  }).select("+password +loginAttempts +lockUntil");
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: updateData },
+    { new: true }
+  ).select("username avatar coverImage");
 
-  if (!user) {
-    throw new ApiError(404, "Invalid credentials");
-  }
-
-  // account locked check
-  if (user.lockUntil && user.lockUntil > Date.now()) {
-    throw new ApiError(403, "Account locked. Try again later");
-  }
-
-  const isPasswordValid = await user.isPasswordCorrect(password);
-  if (!isPasswordValid) {
-    const updates = {
-      $inc: { loginAttempts: 1 }
-    };
-
-    if (user.loginAttempts + 1 >= 5) {
-      updates.$set = {
-        lockUntil: Date.now() + 10 * 60 * 1000
-      };
-    }
-
-    await User.updateOne({ _id: user._id }, updates);
-    throw new ApiError(401, "Invalid credentials");
-  }
-
-  // success login
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
-
-  await User.updateOne(
-    { _id: user._id },
-    {
-      $set: {
-        loginAttempts: 0,
-        lockUntil: null,
-        refreshToken
-      }
-    }
+  return res.status(200).json(
+    new ApiResponse(200, user, "Profile images updated successfully")
   );
-
-  const userResponse = {
-    _id: user._id,
-    username: user.username,
-    email: user.email,
-    fullName: user.fullName,
-    avatar: user.avatar
-  };
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict"
-  };
-
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-      new ApiResponse(200, { user: userResponse },"User logged in successfully")
-    );
 });
 
-const logoutUser = asyncHandler(async (req, res) => {
-  await User.updateOne(
-    { _id: req.user._id },
-    { $unset: { refreshToken: 1 } }
-  );
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict"
-  };
-
-  return res
-    .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User logged out successfully"));
-});
-
-// ReGenerate tokens
-const refreshAccessToken = asyncHandler(async (req, res) => {
-  // STEPS :-
-  // Get Refresh Token from Client
-  // Check Refresh Token Exists or Not
-  // Verify Refresh Token
-  // Extract User ID from Token
-  // Check User Exists in Database
-  // Match Refresh Token with Database
-  // Generate New Tokens
-  // Store Tokens in Secure Cookies
-  // Send Success Response
-  // Handle Errors
-  
-  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
-
-  if(!incomingRefreshToken) {
-    throw new ApiError(401, "Unauthorized request");
-  }
-
-  try {
-    const decodedToken = jtw.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
-    const user = await User.findById(decodedToken?._id);
-  
-    if(!user) {
-      throw new ApiError(401, "Invalid RefreshToken");
-    }
-  
-    if(incomingRefreshToken !== user?.refreshToken) {
-      throw new ApiError(401, "Refresh token is expired or used");
-    }
-  
-    const options = {
-      httpOnly : true,
-      secure : true
-    }
-  
-    const {accessToken, newRefreshToken} = await generateAccessAndRefreshToken(user._id);
-  
-    res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", newRefreshToken, options)
-    .json(
-      new ApiResponse(200, {accessToken, refreshToken: newRefreshToken}, "Access token refreshed")
-    )
-  } catch (error) {
-    throw new ApiError(401, error?.message || "Invalid refresh token")
-  }
+const getCurrentUser = asyncHandler(async(req, res) => {
+  return res.status(200).json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -260,10 +77,6 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {}, "Password changed successfully")
   );
-})
-
-const getCurrentUser = asyncHandler(async(req, res) => {
-  return res.status(200).json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
 
 const changeUserDetails = asyncHandler(async(req, res) => {
@@ -312,7 +125,7 @@ const updateAvatar = asyncHandler(async(req, res) => {
     },
     {
       new: true,
-      select: "username fullName email avatar coverImage" 
+      select: "username coverImage" 
     }
   )
 
@@ -343,7 +156,7 @@ const updateCoverImage = asyncHandler(async(req, res) => {
     },
     {
       new: true,
-      select: "username fullName email avatar coverImage" 
+      select: "username coverImage" 
     }
   )
 
@@ -471,6 +284,6 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 })
 
 export { 
-  registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword,
-  getCurrentUser, changeUserDetails, updateAvatar, updateCoverImage , getUserChannelProfile, getWatchHistory
+  changeCurrentPassword, getCurrentUser, changeUserDetails, updateAvatar,
+  updateCoverImage , getUserChannelProfile, getWatchHistory, uploadUserImages
 };

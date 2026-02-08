@@ -55,7 +55,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     .populate("owner" , "username avatar")
 
     if(!playList) {
-        throw new ApiError(404, "PlayList not fount")
+        throw new ApiError(404, "PlayList not found")
     }
 
     return res.status(200).json(
