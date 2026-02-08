@@ -146,11 +146,12 @@ VideoTube-Backend/
 
 ### 👤 Auth & User
 
-* `POST   /api/v1/users/register`
-* `POST   /api/v1/users/login`
-* `POST   /api/v1/users/logout`
+* `POST   /api/v1/auth/register`
+* `POST   /api/v1/auth/login`
+* `POST   /api/v1/auth/logout`
+
 * `POST   /api/v1/users/change-password`
-* `GET    /api/v1/users/current-user`
+* `GET    /api/v1/users/currentUser`
 * `PATCH  /api/v1/users/update-account`
 
 ---
@@ -208,38 +209,6 @@ VideoTube-Backend/
 
 ---
 
-## ⚙️ Environment Variables
-
-```
-PORT=your_port
-MONGODB_URI=your_mongodb_connection
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-JWT_ACCESS_EXPIRE=15m
-JWT_REFRESH_EXPIRE=7d
-
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-```
-
----
-
-## ▶️ How to Run Locally
-
-```bash
-npm install
-npm run dev
-```
-
-Server runs on:
-
-```
-http://localhost:PORT
-```
-
----
-
 ## 🧠 Learning Outcomes
 
 * Real‑world JWT authentication flow
@@ -268,3 +237,5 @@ http://localhost:PORT
 ---
 
 ⭐ If you like this project, feel free to extend it and make it production‑ready!
+
+## Author - JAVED
