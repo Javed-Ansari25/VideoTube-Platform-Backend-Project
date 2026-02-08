@@ -238,4 +238,4 @@ VideoTube-Backend/
 
 ⭐ If you like this project, feel free to extend it and make it production‑ready!
 
-## Author - JAVED# 🎥 VideoTube – Backend API
+# Author - JAVED
