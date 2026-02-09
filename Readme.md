@@ -14,6 +14,7 @@ https://videotube-platform-backend-project.onrender.com/api/v1
 ```
 
 All APIs are served under the `/api/v1` prefix.
+
 ---
 #### Example Public API
 
