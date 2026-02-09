@@ -7,49 +7,82 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import deleteLocalFile from '../utils/deleteLocalFile.js';
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const {page = 1, limit = 10, query, sortBy = 'createdAt', sortType = 'desc', userId} = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    query,
+    sortBy = "createdAt",
+    sortType = "desc",
+    userId,
+  } = req.query;
 
-  // Match stage
+  // allowed sort fields (security)
+  const allowedSortFields = ["createdAt", "views", "duration"];
+  const sortField = allowedSortFields.includes(sortBy)
+    ? sortBy
+    : "createdAt";
+
+  // match stage
   const matchStage = {
     isPublished: true,
   };
 
-  // Search by title
+  // search
   if (query) {
-    matchStage.title = { $regex: query, $options: 'i' };
+    matchStage.title = { $regex: query, $options: "i" };
   }
 
-  // Filter by userId (only if provided)
+  // filter by user
   if (userId) {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      throw new ApiError(400, 'Invalid userId');
+      throw new ApiError(400, "Invalid userId");
     }
-
     matchStage.owner = new mongoose.Types.ObjectId(userId);
   }
 
-  // Aggregation pipeline
+  // aggregation
   const aggregate = Video.aggregate([
     { $match: matchStage },
+
+    // only required fields for LIST PAGE
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        videoFile: 1,
+        thumbnail: 1,
+        duration: 1,
+        views: 1,
+        owner: 1,
+        createdAt: 1,
+      },
+    },
+
     {
       $sort: {
-        [sortBy]: sortType === 'asc' ? 1 : -1,
+        [sortField]: sortType === "asc" ? 1 : -1,
       },
     },
   ]);
 
-  // Pagination options
   const options = {
     page: Number(page),
     limit: Number(limit),
+    customLabels: {
+      docs: "videos",
+      totalDocs: "totalVideos",
+    },
   };
 
-  // Execute aggregation with pagination
   const videos = await Video.aggregatePaginate(aggregate, options);
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, videos, 'Videos fetched successfully'));
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      videos,
+      "Videos fetched successfully"
+    )
+  );
 });
 
 const publishAVideo = asyncHandler(async (req, res) => {
