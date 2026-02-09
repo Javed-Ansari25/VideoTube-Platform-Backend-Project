@@ -14,6 +14,12 @@ https://videotube-platform-backend-project.onrender.com/api/v1
 ```
 
 All APIs are served under the `/api/v1` prefix.
+---
+#### Example Public API
+
+```
+https://videotube-platform-backend-project.onrender.com/api/v1/videos
+```
 
 ---
 
@@ -127,14 +133,6 @@ Built for **real-world usage**, backend learning, and portfolio showcasing.
 GET    /api/v1/videos
 GET    /api/v1/videos/:videoId
 ```
-
-#### Example Public API
-
-```
-https://videotube-platform-backend-project.onrender.com/api/v1/videos
-```
-
----
 
 ### 🔑 Authentication Routes
 
