@@ -1,60 +1,93 @@
-# 🎥 VideoTube – Backend API
+# 🎥 VideoTube – Video Streaming Platform (Backend)
 
-VideoTube is a **scalable, production‑style backend API** inspired by platforms like YouTube. It is built using **Node.js, Express.js, MongoDB**, and modern backend best practices such as **JWT authentication, Cloudinary file uploads, and secure user management**.
+**VideoTube** is a **production-ready backend** for a YouTube-like video streaming platform.
+It is built using **Node.js, Express.js, and MongoDB**, and follows modern backend best practices such as **JWT authentication, role-based access control, Cloudinary media uploads, and scalable REST APIs**.
 
-This project is designed as a **learning + portfolio‑ready backend**, with clean architecture, reusable utilities, optimized database queries, and interview‑focused concepts.
-
----
-
-## 🚀 Features
-
-### 👤 User Management
-
-* User registration & login
-* JWT‑based authentication (Access Token + Refresh Token)
-* Secure password hashing using **bcrypt**
-* Change password functionality
-* Get current logged‑in user details
-* Update user account details (name, email, etc.)
+This project is designed to demonstrate **real-world backend architecture**, clean code organization, and portfolio-ready backend engineering skills.
 
 ---
 
-### 🖼️ Media Upload
+## 🌐 Live Base URL
 
-* Avatar upload
-* Cover image upload
-* File handling using **Multer**
-* Cloud storage using **Cloudinary**
-* Automatic local file cleanup after upload
+```
+https://videotube-platform-backend-project.onrender.com/api/v1
+```
+
+All APIs are served under the `/api/v1` prefix.
 
 ---
 
-### 📺 Channel & Profile
+## 🚀 Project Overview
 
-* Get user channel profile by username
-* Channel ownership logic
-* Protected routes using JWT middleware
+The VideoTube backend provides:
+
+* Secure authentication & authorization
+* Public and protected video APIs
+* Video upload, update, publish & delete workflows
+* Playlist creation & management
+* Comment, like & subscription systems
+* Ownership-based access control
+* Centralized error handling & standardized API responses
+
+Built for **real-world usage**, backend learning, and portfolio showcasing.
+
+---
+
+## 👥 Roles & Access Control
+
+### 👤 User
+
+* Register & login securely
+* Browse **published videos** (public access)
+* Watch videos
+* Like videos & comments
+* Comment on videos
+* Create & manage personal playlists
+* Subscribe / unsubscribe to channels
+
+### 🎥 Creator (Channel Owner)
+
+* Upload videos
+* Update & delete **own videos only**
+* Publish / unpublish own videos
+* Manage own playlists
+* View channel analytics (basic)
+
+> ⚠️ Admin-level moderation is planned for future versions.
+
+---
+
+## ✨ Key Features
+
+### 🔐 Authentication & Security
+
+* Secure registration & login
+* Password hashing using **bcrypt**
+* JWT-based authentication (Access & Refresh Tokens)
+* Tokens stored in **HTTP-only cookies**
+* Protected routes using `verifyJWT`
+* Environment-based configuration using `dotenv`
 
 ---
 
 ### 🎬 Video Management
 
-* Create (upload) video metadata
-* Update video details (title, description, thumbnail)
+* Upload video files with metadata
+* Thumbnail upload support
 * Publish / unpublish videos
-* Get single video details
-* Get all videos with pagination
-* Owner‑based authorization for video updates
+* Fetch all videos with pagination
+* Fetch single video details
+* Owner-based authorization for updates
+* Optimized MongoDB queries
 
 ---
 
 ### 💬 Comment System
 
-* Add comment on a video
-* Update comment (owner only)
-* Delete comment (owner only)
+* Add comments on videos
+* Update & delete own comments
 * Fetch all comments of a video
-* Optimized queries using **aggregation pipeline**
+* Aggregation-based optimized queries
 
 ---
 
@@ -62,180 +95,161 @@ This project is designed as a **learning + portfolio‑ready backend**, with cle
 
 * Toggle like on videos
 * Toggle like on comments
-* Toggle like on tweets/posts
-* Prevent duplicate likes using compound indexes
-* Like count retrieval per resource
+* Prevent duplicate likes
+* Like count per resource
 
 ---
 
 ### 📂 Playlist Management
 
-* Create playlist
-* Update playlist (name, description)
-* Delete playlist
-* Add video to playlist
-* Remove video from playlist
-* Playlist ownership validation
-* Duplicate video prevention using `$addToSet`
+* Create playlists
+* Update playlist details
+* Delete playlists
+* Add / remove videos from playlists
+* Ownership validation
+* Duplicate prevention using `$addToSet`
 
 ---
 
 ### 🔔 Subscription System
 
-* Subscribe / unsubscribe to a channel (toggle)
-* Get subscriber count of a channel
-* Get channels subscribed by a user
-* Efficient queries using indexed fields
+* Subscribe / unsubscribe to channels (toggle)
+* Get channel subscriber count
+* Fetch user subscriptions
 
 ---
 
-### 🔐 Security
+## 🔗 API Routes Overview
 
-* HTTP‑only cookies for tokens
-* Access & Refresh token strategy
-* Middleware‑based route protection (`verifyJWT`)
-* Environment variable based configuration
-
----
-
-## 🛠️ Tech Stack
-
-* **Backend:** Node.js, Express.js
-* **Database:** MongoDB (Mongoose)
-* **Authentication:** JWT (Access & Refresh Tokens)
-* **File Upload:** Multer
-* **Cloud Storage:** Cloudinary
-* **Security:** bcrypt, cookie‑parser
-* **Dev Tools:** Nodemon, dotenv
-
----
-
-## 📂 Project Structure
+### 🌍 Public Routes (No Authentication Required)
 
 ```
-VideoTube-Backend/
-│
-├── src/
-│   ├── controllers/      # Business logic (users, videos, comments, likes, playlists, subscriptions)
-│   ├── models/           # Mongoose schemas & indexes
-│   ├── routes/           # Express API routes
-│   ├── middlewares/      # Auth, multer, error handlers
-│   ├── utils/            # Reusable helpers & API responses
-│   ├── config/           # Database & Cloudinary configuration
-│   └── app.js            # Express app setup
-│
-├── .env.example
-├── package.json
-└── README.md
+GET    /api/v1/videos
+GET    /api/v1/videos/:videoId
+```
+
+#### Example Public API
+
+```
+https://videotube-platform-backend-project.onrender.com/api/v1/videos
 ```
 
 ---
 
-## 🔑 Authentication Flow (High Level)
+### 🔑 Authentication Routes
 
-1. User logs in using email & password
-2. Server verifies credentials
-3. **Access Token** (short‑lived) is generated
-4. **Refresh Token** (long‑lived) is generated & stored
-5. Tokens are sent via **HTTP‑only cookies**
-6. Protected routes are accessed using `verifyJWT` middleware
-
----
-
-## 📡 API Routes (Overview)
-
-### 👤 Auth & User
-
-* `POST   /api/v1/auth/register`
-* `POST   /api/v1/auth/login`
-* `POST   /api/v1/auth/logout`
-
-* `POST   /api/v1/users/change-password`
-* `GET    /api/v1/users/currentUser`
-* `PATCH  /api/v1/users/update-account`
+```
+POST   /api/v1/auth/register
+POST   /api/v1/auth/login
+POST   /api/v1/auth/logout
+POST   /api/v1/auth/refresh-token
+```
 
 ---
 
-### 🖼️ Media
+### 🎬 Video Routes (Protected)
 
-* `PATCH  /api/v1/users/avatar`
-* `PATCH  /api/v1/users/cover-image`
-
----
-
-### 🎬 Videos
-
-* `POST   /api/v1/videos`
-* `GET    /api/v1/videos`
-* `GET    /api/v1/videos/:videoId`
-* `PATCH  /api/v1/videos/:videoId`
-* `PATCH  /api/v1/videos/toggle/publish/:videoId`
+```
+POST   /api/v1/videos
+PATCH  /api/v1/videos/:videoId
+PATCH  /api/v1/videos/toggle/publish/:videoId
+```
 
 ---
 
-### 💬 Comments
+### 💬 Comment Routes
 
-* `POST   /api/v1/comments/:videoId`
-* `GET    /api/v1/comments/:videoId`
-* `PATCH  /api/v1/comments/:commentId`
-* `DELETE /api/v1/comments/:commentId`
-
----
-
-### ❤️ Likes
-
-* `POST   /api/v1/likes/toggle/video/:videoId`
-* `POST   /api/v1/likes/toggle/comment/:commentId`
-* `POST   /api/v1/likes/toggle/tweet/:tweetId`
+```
+POST   /api/v1/comments/:videoId
+GET    /api/v1/comments/:videoId
+PATCH  /api/v1/comments/:commentId
+DELETE /api/v1/comments/:commentId
+```
 
 ---
 
-### 📂 Playlists
+### ❤️ Like Routes
 
-* `POST   /api/v1/playlists`
-* `GET    /api/v1/playlists/user/:userId`
-* `PATCH  /api/v1/playlists/:playlistId`
-* `DELETE /api/v1/playlists/:playlistId`
-* `PATCH  /api/v1/playlists/add/:videoId/:playlistId`
-* `PATCH  /api/v1/playlists/remove/:videoId/:playlistId`
+```
+POST   /api/v1/likes/toggle/video/:videoId
+POST   /api/v1/likes/toggle/comment/:commentId
+```
 
 ---
 
-### 🔔 Subscriptions
+### 📂 Playlist Routes
 
-* `POST   /api/v1/subscriptions/toggle/:channelId`
-* `GET    /api/v1/subscriptions/channel/:channelId`
-* `GET    /api/v1/subscriptions/user/:userId`
-
----
-
-## 🧠 Learning Outcomes
-
-* Real‑world JWT authentication flow
-* Secure password & token handling
-* MongoDB indexing & aggregation pipelines
-* Toggle‑based like & subscription systems
-* RESTful API design
-* Clean controller & middleware separation
+```
+POST   /api/v1/playlists
+GET    /api/v1/playlists/user/:userId
+PATCH  /api/v1/playlists/:playlistId
+DELETE /api/v1/playlists/:playlistId
+PATCH  /api/v1/playlists/add/:videoId/:playlistId
+PATCH  /api/v1/playlists/remove/:videoId/:playlistId
+```
 
 ---
 
-## 📌 Future Improvements
+### 🔔 Subscription Routes
 
-* Video streaming & HLS support
-* Watch history & recommendations
-* Notifications system
-* Role‑based access control (RBAC)
-* API rate limiting & caching
-
----
-
-## 🙌 Conclusion
-
-**VideoTube Backend** is a complete, interview‑ready backend project showcasing modern backend engineering practices. It is suitable for **learning, portfolio showcase, and scaling into a full‑stack application**.
+```
+POST   /api/v1/subscriptions/toggle/:channelId
+GET    /api/v1/subscriptions/channel/:channelId
+GET    /api/v1/subscriptions/user/:userId
+```
 
 ---
 
-⭐ If you like this project, feel free to extend it and make it production‑ready!
+## 🧩 Access Control Summary
 
-# Author - JAVED
+| Role    | Videos | Playlists | Comments | Subscriptions |
+| ------- | ------ | --------- | -------- | ------------- |
+| User    | View   | Own       | Own      | ✅             |
+| Creator | Own    | Own       | Own      | ✅             |
+
+---
+
+## 🛠 Backend Architecture
+
+* RESTful API design using **Express.js**
+* Modular folder structure (routes, controllers, utils)
+* MongoDB integration with **Mongoose**
+* Aggregation pipelines for optimized queries
+* Centralized error & response handling
+* CORS enabled for frontend integration
+* Development workflow using **nodemon**
+
+---
+
+## 🛠 Technologies Used
+
+| Technology    | Purpose              |
+| ------------- | -------------------- |
+| Node.js       | JavaScript runtime   |
+| Express.js    | REST API framework   |
+| MongoDB       | NoSQL database       |
+| Mongoose      | MongoDB ODM          |
+| Multer        | File upload handling |
+| Cloudinary    | Media storage        |
+| bcrypt        | Password hashing     |
+| JWT           | Authentication       |
+| dotenv        | Environment config   |
+| cookie-parser | Secure cookies       |
+
+---
+
+## 🎯 Learning Outcomes
+
+* Real-world JWT authentication flow
+* Ownership-based authorization
+* Pagination & aggregation in MongoDB
+* Toggle-based like & subscription systems
+* Clean backend architecture
+* Production-ready API design mindset
+
+---
+
+## 👨‍💻 Author
+
+**Javed**
+📌 Built for learning, practice & real-world backend experience
