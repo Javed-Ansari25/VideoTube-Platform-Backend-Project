@@ -28,20 +28,39 @@ const createPlaylist = asyncHandler(async (req, res) => {
 })
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
-    const {userId} = req.params;
+  const { userId } = req.params;
 
-    const playList = await PlayList.find({
-        owner : userId
-    }).populate("videos")
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
 
-    if(!playList) {
-        throw new ApiError(404, "PlayList not fount")
-    }
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new ApiError(400, "Invalid userId");
+  }
 
-    return res.status(200).json(
-        new ApiResponse(200, playList, "User playlists fetched successfully")
-    ); 
-})
+  const totalPlaylists = await PlayList.countDocuments({ owner: userId });
+
+  const playLists = await PlayList.find({ owner: userId })
+    .populate("videos", "title thumbnail duration")
+    .sort({ createdAt: -1 }) 
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  if (playLists.length === 0) {
+    throw new ApiError(404, "No playlists found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200,
+      {
+        playlists: playLists,
+        totalPlaylists
+      },
+      "User playlists fetched successfully"
+    )
+  );
+});
 
 const getPlaylistById = asyncHandler(async (req, res) => {
     const {playlistId} = req.params;
@@ -66,9 +85,8 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
     const {playlistId, videoId} = req.params;
 
-    if(!mongoose.Types.ObjectId.isValid(playlistId) || !mongoose.Types.ObjectId.isValid(videoId)) {
-        throw new ApiError(400, "Invalid playlist or video id");
-    }
+    if(!mongoose.Types.ObjectId.isValid(playlistId)) throw new ApiError(400, "Invalid playlistId");
+    if(!mongoose.Types.ObjectId.isValid(videoId)) throw new ApiError(400, "Invalid videoId");
 
     const playList = await PlayList.findOneAndUpdate(
         {
@@ -95,12 +113,8 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     const { playlistId, videoId } = req.params
 
-    if (
-        !mongoose.Types.ObjectId.isValid(playlistId) ||
-        !mongoose.Types.ObjectId.isValid(videoId)
-    ) {
-        throw new ApiError(400, "Invalid playlist or video id")
-    }
+    if(!mongoose.Types.ObjectId.isValid(playlistId)) throw new ApiError(400, "Invalid playlistId");
+    if(!mongoose.Types.ObjectId.isValid(videoId)) throw new ApiError(400, "Invalid videoId");
 
     const playList = await PlayList.findOneAndUpdate(
         {
